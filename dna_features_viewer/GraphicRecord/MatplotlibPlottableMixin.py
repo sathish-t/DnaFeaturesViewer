@@ -171,17 +171,66 @@ class MatplotlibPlottableMixin(MultilinePlottableMixin, SequenceAndTranslationMi
             head_length=head_length,
         )
         y = self.feature_level_height * level
-        patch = mpatches.FancyArrowPatch(
-            [x1, y],
-            [x2, y],
-            shrinkA=0.0,
-            shrinkB=0.0,
-            arrowstyle=arrowstyle,
-            facecolor=feature.color,
-            zorder=0,
-            edgecolor=feature.linecolor,
-            linewidth=feature.linewidth,
-        )
+        if 'type' in feature.data:
+            if feature.data['type'] == "origin":
+                patch = mpatches.Ellipse(
+                    (x1 / 2 + x2 / 2, y),
+                    height=feature.thickness,
+                    width=max(x1, x2) - min(x1, x2),
+                    facecolor=feature.color,
+                    zorder=0,
+                    edgecolor=feature.linecolor,
+                    linewidth=feature.linewidth,
+                )
+            elif feature.data['type'] == "model_pause":
+                if is_undirected:
+                    raise ValueError("Pls set pause strand using fork direction!")
+                else:
+                    x_locs = [min(x1, x2), max(x1, x2), x1 / 2 + x2 / 2]
+                    y_locs = [y + feature.strand * feature.thickness, y]
+                    patch = mpatches.Polygon(
+                        [
+                            [x_locs[0], y_locs[0]], [x_locs[1], y_locs[0]],
+                            [x_locs[2], y_locs[1]]
+                        ],
+                        closed=True,
+                        facecolor=feature.color,
+                        zorder=0,
+                        edgecolor=feature.linecolor,
+                        linewidth=feature.linewidth,
+                    )
+            elif feature.data['type'] == "fork_stall":
+                if is_undirected:
+                    raise ValueError("Pls set fork stall strand!")
+                else:
+                    x_locs = [min(x1, x2), max(x1, x2), x1 / 2 + x2 / 2]
+                    y_locs = [y - feature.thickness, y + feature.thickness, y]
+                    points = [[x_locs[0], y_locs[0]], [x_locs[0], y_locs[1]],
+                              [x_locs[1], y_locs[1]], [x_locs[1], y_locs[0]],
+                              [x_locs[2], y_locs[2]]]
+                    patch = mpatches.Polygon(
+                        [points[k] for k in [0, 4, 1, 2, 3]] if feature.strand == 1
+                            else [points[k] for k in [0, 3, 4, 2, 1]],
+                        closed=True,
+                        facecolor=feature.color,
+                        zorder=0,
+                        edgecolor=feature.linecolor,
+                        linewidth=feature.linewidth,
+                    )
+            else:
+                raise ValueError("Unknown feature type!")
+        else:
+            patch = mpatches.FancyArrowPatch(
+                [x1, y],
+                [x2, y],
+                shrinkA=0.0,
+                shrinkB=0.0,
+                arrowstyle=arrowstyle,
+                facecolor=feature.color,
+                zorder=0,
+                edgecolor=feature.linecolor,
+                linewidth=feature.linewidth,
+            )
         ax.add_patch(patch)
         return patch
 
