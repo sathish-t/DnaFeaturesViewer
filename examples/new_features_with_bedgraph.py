@@ -1,5 +1,8 @@
+import matplotlib.pyplot as plt
+import csv
 from dna_features_viewer import BiopythonTranslator
 # Script modified from custom_biopython_translator.py
+# and with_gc_plot.py
 
 
 class CustomTranslatorWithNewFeatures(BiopythonTranslator):
@@ -47,15 +50,15 @@ class CustomTranslatorWithNewFeatures(BiopythonTranslator):
             t_feature.data['type'] = "origin"
             t_feature.color = "yellow"
             t_feature.thickness = 0.4
-            t_feature.start = t_feature.start - 80
-            t_feature.end = t_feature.end + 80
+            t_feature.start = t_feature.start - 20
+            t_feature.end = t_feature.end + 20
         elif feature.type == "model_pause":
             t_feature.data['type'] = "model_pause"
             t_feature.color = "brown"
             t_feature.thickness = 0.4
             t_feature.label = None
-            t_feature.start = t_feature.start - 80
-            t_feature.end = t_feature.end + 80
+            t_feature.start = t_feature.start - 20
+            t_feature.end = t_feature.end + 20
         elif feature.type == "fork_stall":
             t_feature.data['type'] = "fork_stall"
             t_feature.color = "green"
@@ -72,7 +75,38 @@ class CustomTranslatorWithNewFeatures(BiopythonTranslator):
         return t_feature
 
 
+fig, (ax1, ax2, ax3) = plt.subplots(
+    3, 1, figsize=(10, 5), sharex=True, gridspec_kw={"height_ratios": [3, 1, 1]}
+)
+
 graphic_record = CustomTranslatorWithNewFeatures().translate_record("example_sequence_new_features.gb")
-ax, _ = graphic_record.plot(figure_width=10)
-ax.figure.tight_layout()
-ax.figure.savefig("new_features.png")
+graphic_record.crop((2000, 4000)).plot(figure_width=10, ax=ax1, with_ruler=False)
+
+x2_bedgraph = []
+y2_bedgraph = []
+with open('bedgraph_a', newline='') as csvfile:
+    reader = csv.reader(csvfile, delimiter=' ', quotechar='#')
+    for row in reader:
+        x2_bedgraph.append(int(row[1])/2 + int(row[2])/2)
+        y2_bedgraph.append(float(row[3]))
+
+ax2.fill_between(x2_bedgraph, y2_bedgraph, alpha=0.3)
+ax2.set_ylim(bottom=0)
+ax2.set_ylabel("signal_1")
+ax2.set_xlabel("Position (bp)")
+
+x3_bedgraph = []
+y3_bedgraph = []
+with open('bedgraph_b', newline='') as csvfile:
+    reader = csv.reader(csvfile, delimiter=' ', quotechar='#')
+    for row in reader:
+        x3_bedgraph.append(int(row[1])/2 + int(row[2])/2)
+        y3_bedgraph.append(float(row[3]))
+
+ax3.fill_between(x3_bedgraph, y3_bedgraph, alpha=0.3)
+ax3.set_ylim(bottom=50)
+ax3.set_ylabel("signal_2")
+ax3.set_xlabel("Position (bp)")
+
+fig.tight_layout()  # Resize the figure to the right height
+fig.savefig("new_features_with_bedgraph.png")
